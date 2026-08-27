@@ -3,7 +3,12 @@ import numpy as np
 
 
 def preprocess_document(image):
-    # Convert RGB image to OpenCV format
+    """
+    Preprocess an uploaded document image
+    for further analysis and OCR.
+    """
+
+    # Convert PIL image to NumPy array
     image = np.array(image)
 
     # Convert RGB to BGR
