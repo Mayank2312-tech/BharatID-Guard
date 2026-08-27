@@ -14,8 +14,22 @@ st.title(" BharatID Guard")
 st.subheader("AI-Based Identity & Document Screening System")
 
 st.write(
-    "Upload an identity or travel document to begin the verification process."
-)
+    "Upload an identity or travel document or any documents to begin the verification process.")
+
+with st.expander("Documents Can be Verified: "):
+    st.write("""
+    1: Aadhaar Card
+    2: PAN Card
+    3: Voter ID Card
+    4: Indian Passport
+    5: Driving Licence
+    6: Ration Card
+    7: Birth Certificate
+    8: NREGS Job Card
+    9: Property Tax Receipt
+    10: Electricity Bill
+    11: Bank Passbook
+    """)
 
 
 st.divider()
