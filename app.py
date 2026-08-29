@@ -1,7 +1,13 @@
 import streamlit as st
 from PIL import Image
+from src.ocr import extract_text
 
 from src.preprocessing import preprocess_document
+from src.document_detector import detect_document_type
+from src.field_extractor import (
+    extract_pan_fields,
+    extract_passport_fields
+)
 
 st.set_page_config(
     page_title="BharatID Guard",
@@ -73,9 +79,46 @@ if uploaded_file is not None:
             clamp=True
         )
 
-    st.divider()
+st.divider()
 
-    st.info(
-        "Phase 1 processing complete. "
-        "The processed image will be used by the OCR module in Phase 2."
-    )
+st.header("🔍 OCR & Information Extraction")
+
+if st.button("Extract Document Text"):
+
+    with st.spinner("Reading document..."):
+
+        image_path = "temp_document.png"
+
+        image.save(image_path)
+
+        try:
+
+            ocr_result = extract_text(image_path)
+
+            st.success("OCR processing completed!")
+
+            if ocr_result:
+
+                st.subheader("📄 Extracted Text")
+
+                for item in ocr_result:
+
+                    col1, col2 = st.columns([4, 1])
+
+                    with col1:
+                        st.write(item["text"])
+
+                    with col2:
+                        st.write(
+                            f'{item["confidence"]}%'
+                        )
+
+            else:
+
+                st.warning(
+                    "No readable text was detected."
+                )
+
+        except Exception as e:
+
+            st.error(f"OCR Error: {e}")
