@@ -8,6 +8,7 @@ from src.field_extractor import (
     extract_pan_fields,
     extract_passport_fields
 )
+from src.validator import validate_pan, validate_passport
 
 st.set_page_config(
     page_title="BharatID Guard",
@@ -160,32 +161,49 @@ if st.button("Extract Document Text"):
                 # Display Fields
                 # -----------------------------
 
-                if fields:
+                if document_type == "PAN Card":
+                    validation_results = validate_pan(fields)
 
-                    st.subheader(
-                        "📋 Extracted Information"
-                    )
-
-                    for field, value in fields.items():
-
-                        st.write(
-                            f"**{field}:** {value}"
-                        )
+                elif document_type == "Indian Passport":
+                    validation_results = validate_passport(fields)
 
                 else:
-
-                    st.info(
-                        "Field extraction for this "
-                        "document type will be added "
-                        "in a future update."
-                    )
-
-            else:
-
-                st.warning(
-                    "No readable text was detected."
-                )
+                    validation_results = []
 
         except Exception as e:
+            st.error(f"Error processing document: {str(e)}")
+st.divider()
 
-            st.error(f"OCR Error: {e}")
+st.header("✅ Document Validation")
+
+if validation_results:
+
+    failed_checks = 0
+
+    for result in validation_results:
+
+        if result["status"] == "PASS":
+
+            st.success(
+                f"✓ {result['check']}: {result['message']}"
+            )
+
+        else:
+
+            failed_checks += 1
+
+            st.error(
+                f"✗ {result['check']}: {result['message']}"
+            )
+
+    st.divider()
+
+    if failed_checks == 0:
+
+        st.success("🟢 DOCUMENT APPEARS VALID")
+
+    else:
+
+        st.warning(
+            "🟠 DOCUMENT REQUIRES MANUAL REVIEW"
+        )
