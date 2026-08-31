@@ -11,11 +11,11 @@ from src.field_extractor import (
 
 st.set_page_config(
     page_title="BharatID Guard",
-    page_icon="In",
+    page_icon="IN",
     layout="wide"
 )
 
-st.title(" BharatID Guard")
+st.title("IN BharatID Guard")
 
 st.subheader("AI-Based Identity & Document Screening System")
 
@@ -112,6 +112,73 @@ if st.button("Extract Document Text"):
                         st.write(
                             f'{item["confidence"]}%'
                         )
+
+                # -----------------------------
+                # Combine OCR Text
+                # -----------------------------
+
+                raw_text = "\n".join(
+                    item["text"]
+                    for item in ocr_result
+                )
+
+                # -----------------------------
+                # Document Detection
+                # -----------------------------
+
+                document_type = detect_document_type(
+                    raw_text
+                )
+
+                st.divider()
+
+                st.subheader("📑 Document Type")
+
+                st.success(document_type)
+
+                # -----------------------------
+                # Field Extraction
+                # -----------------------------
+
+                if document_type == "PAN Card":
+
+                    fields = extract_pan_fields(
+                        raw_text
+                    )
+
+                elif document_type == "Indian Passport":
+
+                    fields = extract_passport_fields(
+                        raw_text
+                    )
+
+                else:
+
+                    fields = {}
+
+                # -----------------------------
+                # Display Fields
+                # -----------------------------
+
+                if fields:
+
+                    st.subheader(
+                        "📋 Extracted Information"
+                    )
+
+                    for field, value in fields.items():
+
+                        st.write(
+                            f"**{field}:** {value}"
+                        )
+
+                else:
+
+                    st.info(
+                        "Field extraction for this "
+                        "document type will be added "
+                        "in a future update."
+                    )
 
             else:
 
