@@ -19,7 +19,7 @@ from src.database import (
 )
 from src.tampering import detect_suspicious_regions
 from src.face_verification import verify_faces
-
+from src.risk_engine import calculate_risk
 
 # =========================================================
 # PAGE CONFIGURATION
@@ -970,3 +970,98 @@ if person_file is not None:
                 "decision and should not be treated as "
                 "definitive proof of identity."
             )
+    st.divider()
+
+st.header("📊 Final Screening Result")
+
+if (
+    st.session_state.document_type != "Unknown Document"
+    and st.session_state.fields
+):
+
+    risk_score, risk_level, risk_reasons = calculate_risk(
+        validation_results=st.session_state.validation_results,
+        database_result=st.session_state.database_result,
+        tampering_result=st.session_state.tampering_result,
+        face_result=st.session_state.get(
+            "face_result",
+            None
+        )
+    )
+
+    # -----------------------------------------
+    # Summary Cards
+    # -----------------------------------------
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    with col1:
+        st.metric(
+            "Document",
+            st.session_state.document_type
+        )
+
+    with col2:
+        st.metric(
+            "OCR",
+            "Completed"
+        )
+
+    with col3:
+        st.metric(
+            "Validation",
+            "Completed"
+        )
+
+    with col4:
+        st.metric(
+            "Risk Score",
+            f"{risk_score}/100"
+        )
+
+
+    st.divider()
+
+
+    # -----------------------------------------
+    # Risk Level
+    # -----------------------------------------
+
+    if risk_level == "LOW":
+
+        st.success(
+            "🟢 LOW RISK — DOCUMENT APPEARS VALID"
+        )
+
+    elif risk_level == "MEDIUM":
+
+        st.warning(
+            "🟠 MEDIUM RISK — MANUAL REVIEW RECOMMENDED"
+        )
+
+    else:
+
+        st.error(
+            "🔴 HIGH RISK — MANUAL VERIFICATION REQUIRED"
+        )
+
+
+    # -----------------------------------------
+    # Risk Explanation
+    # -----------------------------------------
+
+    st.subheader("🔎 Risk Explanation")
+
+    for reason in risk_reasons:
+
+        st.write(
+            f"• {reason}"
+        )
+
+
+else:
+
+    st.info(
+        "Upload and process a document to generate "
+        "the final screening result."
+    )
