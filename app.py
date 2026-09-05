@@ -18,6 +18,7 @@ from src.database import (
     check_document
 )
 from src.tampering import detect_suspicious_regions
+from src.face_verification import verify_faces
 
 
 # =========================================================
@@ -63,7 +64,9 @@ if "database_result" not in st.session_state:
 
 if "tampering_result" not in st.session_state:
     st.session_state.tampering_result = None
-
+    
+if "face_result" not in st.session_state:
+    st.session_state.face_result = None
 
 # =========================================================
 # HEADER
@@ -658,10 +661,312 @@ if st.session_state.tampering_result:
     # DISCLAIMER
     # -------------------------------------------------
 
-    st.info(
-        "This analysis identifies image-forensic "
-        "anomalies and should be treated as a screening "
-        "signal, not definitive proof of document forgery. "
-        "Final verification should be performed by an "
-        "authorized officer."
+
+# =========================================================
+# FACE VERIFICATION
+# =========================================================
+
+st.divider()
+
+st.header("👤 Face Verification")
+
+st.write(
+    "Compare the face present on the identity document "
+    "with the presented person's photograph."
+)
+
+
+# ---------------------------------------------------------
+# Upload Person's Photograph
+# ---------------------------------------------------------
+
+person_file = st.file_uploader(
+    "📷 Upload Person's Photograph",
+    type=["jpg", "jpeg", "png"],
+    key="person_photo"
+)
+
+
+if person_file is not None:
+
+    person_image = Image.open(person_file)
+
+    st.subheader("📷 Presented Person")
+
+    st.image(
+        person_image,
+        caption="Presented Person",
+        width=300
     )
+
+
+    # -----------------------------------------------------
+    # Verify Face Button
+    # -----------------------------------------------------
+
+    if st.button(
+        "🔍 Verify Face",
+        type="primary"
+    ):
+
+        with st.spinner(
+            "Detecting and comparing faces..."
+        ):
+
+            try:
+
+                # -------------------------------------------------
+                # Save document image
+                # -------------------------------------------------
+
+                document_path = "document_for_face.png"
+
+                image.save(
+                    document_path
+                )
+
+
+                # -------------------------------------------------
+                # Save person's image
+                # -------------------------------------------------
+
+                person_path = "person_face.png"
+
+                person_image.save(
+                    person_path
+                )
+
+
+                # -------------------------------------------------
+                # Run Face Verification
+                # -------------------------------------------------
+
+                result = verify_faces(
+                    document_path,
+                    person_path
+                )
+
+
+                # -------------------------------------------------
+                # Store result
+                # -------------------------------------------------
+
+                st.session_state.face_result = result
+
+
+            except Exception as e:
+
+                st.session_state.face_result = {
+                    "status": "ERROR",
+                    "error": str(e)
+                }
+
+
+    # =====================================================
+    # DISPLAY FACE VERIFICATION RESULT
+    # =====================================================
+
+    if st.session_state.face_result:
+
+        result = st.session_state.face_result
+
+        st.divider()
+
+        st.subheader(
+            "🔎 Face Verification Result"
+        )
+
+
+        # -------------------------------------------------
+        # ERROR
+        # -------------------------------------------------
+
+        if result["status"] == "ERROR":
+
+            st.error(
+                "⚠️ Face verification could not be completed."
+            )
+
+            st.warning(
+                result.get(
+                    "error",
+                    "Unknown error occurred."
+                )
+            )
+
+
+        # -------------------------------------------------
+        # SUCCESSFUL VERIFICATION
+        # -------------------------------------------------
+
+        else:
+
+            # -------------------------------------------------
+            # MATCH
+            # -------------------------------------------------
+
+            if result["status"] == "MATCH":
+
+                st.success(
+                    "🟢 FACE MATCH"
+                )
+
+
+            # -------------------------------------------------
+            # REVIEW
+            # -------------------------------------------------
+
+            elif result["status"] == "REVIEW":
+
+                st.warning(
+                    "🟠 FACE VERIFICATION REQUIRES REVIEW"
+                )
+
+
+            # -------------------------------------------------
+            # MISMATCH
+            # -------------------------------------------------
+
+            elif result["status"] == "MISMATCH":
+
+                st.error(
+                    "🔴 FACE MISMATCH"
+                )
+
+
+            # -------------------------------------------------
+            # Similarity Score
+            # -------------------------------------------------
+
+            st.metric(
+                "Face Similarity Score",
+                f"{result['similarity']}%"
+            )
+
+
+            st.write(
+                f"**Cosine Similarity:** "
+                f"{result['cosine_similarity']}"
+            )
+
+
+            st.caption(
+                "The similarity score is a prototype "
+                "screening metric and is not a biometric "
+                "probability."
+            )
+
+
+            st.divider()
+
+
+            # -------------------------------------------------
+            # Detected Faces
+            # -------------------------------------------------
+
+            st.subheader(
+                "👁️ Detected Faces"
+            )
+
+
+            col1, col2 = st.columns(2)
+
+
+            with col1:
+
+                st.image(
+                    result["document_face"],
+                    caption="Face Extracted From Document",
+                    channels="BGR",
+                    use_container_width=True
+                )
+
+
+            with col2:
+
+                st.image(
+                    result["person_face"],
+                    caption="Presented Person Face",
+                    channels="BGR",
+                    use_container_width=True
+                )
+
+
+            st.divider()
+
+
+            # -------------------------------------------------
+            # Verification Details
+            # -------------------------------------------------
+
+            st.subheader(
+                "📊 Verification Details"
+            )
+
+
+            col1, col2, col3 = st.columns(3)
+
+
+            with col1:
+
+                st.metric(
+                    "Similarity",
+                    f"{result['similarity']}%"
+                )
+
+
+            with col2:
+
+                st.metric(
+                    "Cosine Score",
+                    result["cosine_similarity"]
+                )
+
+
+            with col3:
+
+                st.metric(
+                    "Result",
+                    result["status"]
+                )
+
+
+            # -------------------------------------------------
+            # Explanation
+            # -------------------------------------------------
+
+            if result["status"] == "MATCH":
+
+                st.success(
+                    "The detected faces show sufficient "
+                    "similarity for this prototype's "
+                    "verification threshold."
+                )
+
+
+            elif result["status"] == "REVIEW":
+
+                st.warning(
+                    "The similarity is in an intermediate "
+                    "range. Manual verification is recommended."
+                )
+
+
+            else:
+
+                st.error(
+                    "The detected faces do not meet the "
+                    "prototype's similarity threshold."
+                )
+
+
+            # -------------------------------------------------
+            # Security Notice
+            # -------------------------------------------------
+
+            st.info(
+                "⚠️ Face verification is a screening signal. "
+                "It should support an authorized officer's "
+                "decision and should not be treated as "
+                "definitive proof of identity."
+            )
