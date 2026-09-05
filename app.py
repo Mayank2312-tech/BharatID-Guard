@@ -519,101 +519,149 @@ if uploaded_file is not None:
     # =====================================================
     # TAMPERING DETECTION
     # =====================================================
+# =====================================================
+# TAMPERING DETECTION
+# =====================================================
 
-    if st.session_state.ocr_result:
+if st.session_state.ocr_result:
 
-        st.divider()
+    st.divider()
 
-        st.header("🛡️ Tampering Detection")
+    st.header("🛡️ Tampering Detection")
 
-        if st.button(
-            "Analyze Document for Tampering"
-        ):
+    if st.button("Analyze Document for Tampering"):
 
-            with st.spinner(
-                "Analyzing document..."
-            ):
+        with st.spinner("Analyzing document..."):
 
-                try:
+            try:
 
-                    suspicious_image, ela_image, risk = (
-                        detect_suspicious_regions(image)
-                    )
+                (
+                    suspicious_image,
+                    ela_image,
+                    risk,
+                    tampering_score,
+                    tampering_evidence
+                ) = detect_suspicious_regions(
+                    image,
+                    st.session_state.validation_results
+                )
 
-                    # Save result
-                    st.session_state.tampering_result = (
-                        suspicious_image,
-                        ela_image,
-                        risk
-                    )
+                # Save result
+                st.session_state.tampering_result = (
+                    suspicious_image,
+                    ela_image,
+                    risk,
+                    tampering_score,
+                    tampering_evidence
+                )
 
-                except Exception as e:
+            except Exception as e:
 
-                    st.error(
-                        f"Tampering analysis error: {str(e)}"
-                    )
-
-
-    # =====================================================
-    # DISPLAY TAMPERING RESULT
-    # =====================================================
-
-    if st.session_state.tampering_result:
-
-        (
-            suspicious_image,
-            ela_image,
-            risk
-        ) = st.session_state.tampering_result
+                st.error(
+                    f"Tampering analysis error: {str(e)}"
+                )
 
 
-        st.subheader("Tampering Analysis")
+# =====================================================
+# DISPLAY TAMPERING RESULT
+# =====================================================
 
+if st.session_state.tampering_result:
 
-        if risk == "LOW":
+    (
+        suspicious_image,
+        ela_image,
+        risk,
+        tampering_score,
+        tampering_evidence
+    ) = st.session_state.tampering_result
 
-            st.success(
-                "🟢 Tampering Risk: LOW"
-            )
+    st.subheader("🔎 Tampering Analysis")
 
-        elif risk == "MEDIUM":
+    # -------------------------------------------------
+    # SCORE
+    # -------------------------------------------------
 
-            st.warning(
-                "🟠 Tampering Risk: MEDIUM"
-            )
+    st.metric(
+        label="Tampering Screening Score",
+        value=f"{tampering_score}/100"
+    )
 
-        else:
+    # -------------------------------------------------
+    # RISK LEVEL
+    # -------------------------------------------------
 
-            st.error(
-                "🔴 Tampering Risk: HIGH"
-            )
+    if risk == "LOW":
 
-
-        col1, col2 = st.columns(2)
-
-
-        with col1:
-
-            st.image(
-                suspicious_image,
-                caption="Suspicious Regions",
-                use_container_width=True
-            )
-
-
-        with col2:
-
-            st.image(
-                ela_image,
-                caption="ELA Analysis",
-                use_container_width=True,
-                clamp=True
-            )
-
-
-        st.info(
-            "This analysis identifies image-forensic "
-            "anomalies and should be treated as a "
-            "screening signal, not definitive proof "
-            "of document forgery."
+        st.success(
+            "🟢 Tampering Risk: LOW"
         )
+
+    elif risk == "MEDIUM":
+
+        st.warning(
+            "🟠 Tampering Risk: MEDIUM"
+        )
+
+    else:
+
+        st.error(
+            "🔴 Tampering Risk: HIGH"
+        )
+
+    # -------------------------------------------------
+    # EVIDENCE
+    # -------------------------------------------------
+
+    st.subheader("🔎 Analysis Evidence")
+
+    if tampering_evidence:
+
+        for evidence in tampering_evidence:
+
+            st.write(
+                f"• {evidence}"
+            )
+
+    else:
+
+        st.write(
+            "No significant anomalies detected."
+        )
+
+    # -------------------------------------------------
+    # IMAGES
+    # -------------------------------------------------
+
+    st.subheader("🖼️ Forensic Analysis")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+
+        st.image(
+            suspicious_image,
+            caption="Suspicious Regions",
+            use_container_width=True
+        )
+
+    with col2:
+
+        st.image(
+            ela_image,
+            caption="ELA Analysis",
+            use_container_width=True,
+            clamp=True
+        )
+
+    # -------------------------------------------------
+    # DISCLAIMER
+    # -------------------------------------------------
+
+    st.info(
+        "This analysis identifies image-forensic "
+        "anomalies and should be treated as a screening "
+        "signal, not definitive proof of document forgery. "
+        "Final verification should be performed by an "
+        "authorized officer."
+    )
