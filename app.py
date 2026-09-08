@@ -88,7 +88,7 @@ st.write(
 # DOCUMENT TYPES
 # =========================================================
 
-with st.expander("📋 Documents Can Be Verified"):
+with st.expander("📋 Documents Can Be Verified(In Future )"):
 
     st.write("""
     1. Aadhaar Card
